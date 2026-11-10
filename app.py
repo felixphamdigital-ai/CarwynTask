@@ -76,32 +76,87 @@ st.set_page_config(page_title="WMT Brief Video & Pictures", page_icon="🎬", la
 
 cfg = load_config()
 
+# ==============================================================================
+# BẢO MẬT: MẬT KHẨU TRUY CẬP (CHỈ NGƯỜI CÓ MẬT KHẨU MỚI VÀO ĐƯỢC)
+# ==============================================================================
+ACCESS_PASSWORD = "WMT2026"
+try:
+    if hasattr(st, "secrets") and "access_password" in st.secrets:
+        ACCESS_PASSWORD = str(st.secrets["access_password"])
+    elif "access_password" in cfg:
+        ACCESS_PASSWORD = str(cfg["access_password"])
+except Exception:
+    pass
+
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    st.title("🔒 WMT Brief Video & Pictures")
+    st.caption("Công cụ nội bộ WeMasterTrade / WeGolden")
+    st.info("👋 Xin chào! Đây là công cụ nội bộ. Vui lòng nhập mật khẩu truy cập để tiếp tục:")
+    col_p1, col_p2 = st.columns([2, 1])
+    with col_p1:
+        pwd_input = st.text_input("Mật khẩu truy cập:", type="password", key="login_pwd")
+    with col_p2:
+        st.write("")
+        st.write("")
+        login_btn = st.button("🔓 Mở khóa công cụ", use_container_width=True)
+
+    if login_btn or pwd_input:
+        if pwd_input == ACCESS_PASSWORD:
+            st.session_state["authenticated"] = True
+            st.success("Mở khóa thành công!")
+            st.rerun()
+        elif pwd_input:
+            st.error("❌ Mật khẩu không chính xác. Vui lòng thử lại!")
+    st.stop()
+
 st.title("🎬🖼️ WMT Brief Video & Pictures")
 st.caption("Công cụ đa năng: Brainstorm Brief Hình Ảnh (Card/Poster), Kịch bản Video Reel, CEO Interview, Reddit Post & Sự kiện cho WeMasterTrade / WeGolden bằng Gemini API.")
 
 with st.sidebar:
-    st.header("⚙️ Cấu hình Gemini")
-    keys_raw = st.text_area(
-        "Gemini API Keys (mỗi key 1 dòng — lỗi key nào tự chuyển sang key kế tiếp)",
-        value="\n".join(cfg.get("api_keys", [])),
-        height=180,
-        key="api_keys_raw",
+    st.header("📌 Chức Năng Tool")
+    content_mode = st.radio(
+        "Chọn tính năng bạn muốn sử dụng:",
+        [
+            "🖼️ Graphic / Card Brief",
+            "📊 Social Monthly Report",
+            "🎬 Video Reel Script",
+            "🎙️ CEO Interview Series",
+            "📅 Event Announcement",
+        ],
+        key="main_content_mode",
     )
-    api_keys = parse_keys(keys_raw)
-    st.caption(f"Đang có {len(api_keys)} key.")
+    st.divider()
+    st.header("⚙️ Cấu hình Gemini")
+
+    preconfigured_keys = cfg.get("api_keys", [])
+    if preconfigured_keys:
+        st.success(f"🔒 Đã kích hoạt sẵn {len(preconfigured_keys)} Key bảo mật.")
+    else:
+        st.warning("Chưa có API key được lưu.")
+
+    custom_keys_raw = st.text_area(
+        "Thêm Key riêng (tùy chọn, 1 key/dòng):",
+        value="",
+        placeholder="Để trống nếu dùng key bảo mật mặc định...",
+        help="Hệ thống đã có sẵn các key chạy luân phiên. Bạn chỉ cần nhập nếu muốn dùng thêm key cá nhân.",
+        height=100,
+        key="custom_api_keys_raw",
+    )
+    custom_keys = parse_keys(custom_keys_raw)
+    api_keys = custom_keys if custom_keys else preconfigured_keys
+
     model = st.selectbox(
         "Model",
         GEMINI_MODELS,
         index=GEMINI_MODELS.index(cfg.get("model", GEMINI_MODELS[0])) if cfg.get("model") in GEMINI_MODELS else 0,
     )
-    remember = st.checkbox("Lưu API keys + model cho lần sau", value=bool(cfg.get("api_keys")))
-    if st.button("💾 Lưu cấu hình"):
-        if remember:
-            save_config({"api_keys": api_keys, "model": model})
-            st.success(f"Đã lưu {len(api_keys)} key.")
-        else:
-            save_config({})
-            st.success("Đã xoá cấu hình đã lưu.")
+    if custom_keys:
+        if st.button("💾 Lưu key cá nhân"):
+            save_config({"api_keys": custom_keys, "model": model})
+            st.success(f"Đã lưu {len(custom_keys)} key cá nhân.")
 
 if "key_index" not in st.session_state:
     st.session_state["key_index"] = 0
@@ -112,11 +167,7 @@ def _rotated(fn):
     st.session_state["key_index"] = idx
     return result
 
-content_mode = st.radio(
-    "Loại nội dung muốn tạo",
-    ["🖼️ Graphic / Card Brief", "📊 Social Monthly Report", "🎬 Video Reel Script", "🎙️ CEO Interview Series", "📅 Event Announcement"],
-    horizontal=True,
-)
+st.caption(f"👉 Chế độ đang chọn: **{content_mode}** *(bạn có thể chuyển đổi tính năng ở thanh menu bên trái)*")
 
 st.divider()
 
