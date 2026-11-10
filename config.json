@@ -1,0 +1,11 @@
+{
+  "api_keys": [
+    "AQ.Ab8RN6IlvQOTj_o5LfXrUtmjnqdc84H-5l7ff47XNNwJEGj7zg",
+    "AIzaSyA764z0egSNDsli7ri9ShUx0KGQQvQPG2k",
+    "AQ.Ab8RN6IU9Na3TID8wyOYUtcYNt1Fq66m7Syon1jz27kUMtvHZA",
+    "AIzaSyCocBM921D4Y7Oz3gWLPt33HuXAuPRmn64",
+    "AQ.Ab8RN6LOUSWXE1lRZIJslgztDYSQ8iC_AAehz4DXlQr2B5nJQg",
+    "AQ.Ab8RN6IpggonJCoA_cBi5QDa4BsylsdSRDYz7TQtkEwYYwFYeg"
+  ],
+  "model": "gemini-2.5-flash"
+}
