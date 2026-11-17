@@ -28,7 +28,7 @@ from excel_builder import build_workbook
 from event_service import EventContentService
 from event_excel_builder import build_event_workbook
 from docx_reader import extract_docx_text
-from key_pool import parse_keys, call_with_rotation
+from key_pool import parse_keys, call_with_rotation, is_model_level_error
 from ceo_interview_service import CEOInterviewService
 from ceo_interview_excel_builder import build_ceo_episode_workbook
 from graphic_brief_service import GraphicBriefService, detect_bullet_count, detect_is_stat_promotion
@@ -148,10 +148,15 @@ with st.sidebar:
     custom_keys = parse_keys(custom_keys_raw)
     api_keys = custom_keys if custom_keys else preconfigured_keys
 
+    available_models = list(GEMINI_MODELS)
+    preferred_model = cfg.get("model", "gemini-3.5-flash")
+    if preferred_model and preferred_model not in available_models:
+        available_models.insert(0, preferred_model)
+
     model = st.selectbox(
         "Model",
-        GEMINI_MODELS,
-        index=GEMINI_MODELS.index(cfg.get("model", GEMINI_MODELS[0])) if cfg.get("model") in GEMINI_MODELS else 0,
+        available_models,
+        index=available_models.index(preferred_model) if preferred_model in available_models else 0,
     )
     if custom_keys:
         if st.button("💾 Lưu key cá nhân"):
@@ -162,10 +167,31 @@ if "key_index" not in st.session_state:
     st.session_state["key_index"] = 0
 
 
-def _rotated(fn):
-    result, idx = call_with_rotation(api_keys, st.session_state["key_index"], fn)
-    st.session_state["key_index"] = idx
-    return result
+def _rotated(fn_factory):
+    candidate_models = [model]
+    fallbacks = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.6-flash"]
+    for fb in fallbacks:
+        if fb not in candidate_models:
+            candidate_models.append(fb)
+
+    last_error = None
+    for cand_model in candidate_models:
+        try:
+            def _runner(k):
+                try:
+                    return fn_factory(k, cand_model)
+                except TypeError:
+                    return fn_factory(k)
+
+            result, idx = call_with_rotation(api_keys, st.session_state["key_index"], _runner)
+            st.session_state["key_index"] = idx
+            if cand_model != model:
+                st.toast(f"⚡ Model chính ({model}) bận/quá tải, đã tự động chuyển sang {cand_model}!", icon="✅")
+            return result
+        except Exception as e:
+            last_error = e
+            continue
+    raise last_error
 
 st.caption(f"👉 Chế độ đang chọn: **{content_mode}** *(bạn có thể chuyển đổi tính năng ở thanh menu bên trái)*")
 
@@ -288,7 +314,7 @@ if content_mode == "🖼️ Graphic / Card Brief":
             type_desc = "Thẻ ô số liệu (Stat Boxes)" if forced_layout == "stat_boxes" else f"Thẻ checklist ({target_num_points or 'auto'} ý)"
             with st.spinner(f"Đang phân tích & brainstorm brief ({type_desc}) với Gemini..."):
                 try:
-                    graphic_result = _rotated(lambda k: GraphicBriefService(api_key=k, model=model).generate(
+                    graphic_result = _rotated(lambda k, m: GraphicBriefService(api_key=k, model=m).generate(
                         brand=graphic_brand,
                         content_input=graphic_input_content,
                         localize_languages=graphic_final_languages,
@@ -475,9 +501,11 @@ if content_mode == "🖼️ Graphic / Card Brief":
                         cta_row += f"\t{loc.cta_text}"
                     brief_tsv_lines.append(cta_row)
                     # Layout
-                    brief_tsv_lines.append(f"Ý tưởng Layout\t\"{opt.visual_layout_idea}\"")
+                    layout_val = getattr(opt, "visual_layout_concept", getattr(opt, "visual_layout_idea", ""))
+                    brief_tsv_lines.append(f"Ý tưởng Layout\t\"{layout_val}\"")
                     # Prompt AI
-                    brief_tsv_lines.append(f"Prompt AI\t\"{opt.ai_image_prompt}\"")
+                    ai_prompt_val = getattr(opt, "ai_image_prompt", "")
+                    brief_tsv_lines.append(f"Prompt AI\t\"{ai_prompt_val}\"")
                     st.code("\n".join(brief_tsv_lines), language="text")
 
         excel_buf = build_graphic_brief_workbook(graphic_result_brand, graphic_result.options, languages=graphic_result_languages)
@@ -846,7 +874,7 @@ elif content_mode == "🎬 Video Reel Script":
         else:
             with st.spinner("Đang brainstorm với Gemini..."):
                 try:
-                    result = _rotated(lambda k: GeminiService(api_key=k, model=model).generate(
+                    result = _rotated(lambda k, m: GeminiService(api_key=k, model=m).generate(
                         brand=brand,
                         platform=platform,
                         region=region,
@@ -956,7 +984,7 @@ elif content_mode == "🎙️ CEO Interview Series":
         else:
             with st.spinner("Đang brainstorm với Gemini..."):
                 try:
-                    ceo_result = _rotated(lambda k: CEOInterviewService(api_key=k, model=model).generate(
+                    ceo_result = _rotated(lambda k, m: CEOInterviewService(api_key=k, model=m).generate(
                         pillar=ceo_pillar,
                         topic_title=ceo_topic_title,
                         episode_key_context=ceo_episode_key,
@@ -1054,7 +1082,7 @@ elif content_mode == "📅 Event Announcement":
         else:
             with st.spinner("Đang brainstorm với Gemini..."):
                 try:
-                    event_result = _rotated(lambda k: EventContentService(api_key=k, model=model).generate(
+                    event_result = _rotated(lambda k, m: EventContentService(api_key=k, model=m).generate(
                         brand=event_brand,
                         region=event_region,
                         localize_languages=event_final_languages,

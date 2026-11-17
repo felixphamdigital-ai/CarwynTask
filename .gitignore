@@ -1,0 +1,6 @@
+# Bảo mật API Key - không bao giờ đẩy config.json lên GitHub
+config.json
+__pycache__/
+*.pyc
+*.lnk
+test_report*

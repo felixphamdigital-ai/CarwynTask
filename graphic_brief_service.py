@@ -181,7 +181,7 @@ QUY TAC RAT QUAN TRONG VE SUB-HEADLINE & CTA (BAT BUOC TUAN THU 100%):
 
 
 class GraphicBriefService:
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash-lite"):
         self.api_key = api_key
         self.model = model
         self.client = genai.Client(api_key=api_key)
