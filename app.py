@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 
 from guideline_data import (
@@ -367,56 +368,178 @@ if content_mode == "🖼️ Graphic / Card Brief":
                         "badge_number": opt.badge_number,
                     })
 
-                # Render HTML Cards
+                # Render HTML Cards (Thiet ke bang Table HTML tuong thich 100% Google Slides)
                 card_cols = st.columns(len(cards_data))
                 for c_idx, c_data in enumerate(cards_data):
                     with card_cols[c_idx]:
+                        badge_num_html = f"<div style='font-size:24px; font-weight:800; color:#B8860B; margin-bottom:2px;'>{c_data['badge_number']}</div>" if c_data["badge_number"] else ""
+
+                        boxes_only_html = ""
                         if c_data["layout_type"] == "stat_boxes" and c_data.get("stat_boxes"):
                             boxes = c_data["stat_boxes"]
                             if len(boxes) == 4:
-                                body_content = "<div style='display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0;'>"
-                                for b in boxes:
-                                    body_content += f"""<div style='border:1.5px solid #CBD5E1; background:#FFFFFF; border-radius:6px; padding:12px 6px; text-align:center;'>
-<div style='font-size:18px; font-weight:800; color:#0F172A; margin-bottom:3px;'>{b.stat_highlight}</div>
-<div style='font-size:12px; color:#475569; font-weight:500;'>{b.label}</div>
-</div>"""
-                                body_content += "</div>"
+                                content_rows_html = f"""
+                                <tr>
+                                  <td style="width:50%; padding:10px 6px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                    <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[0].stat_highlight}</div>
+                                    <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[0].label}</div>
+                                  </td>
+                                  <td style="width:50%; padding:10px 6px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                    <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[1].stat_highlight}</div>
+                                    <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[1].label}</div>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td style="width:50%; padding:10px 6px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                    <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[2].stat_highlight}</div>
+                                    <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[2].label}</div>
+                                  </td>
+                                  <td style="width:50%; padding:10px 6px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                    <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[3].stat_highlight}</div>
+                                    <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[3].label}</div>
+                                  </td>
+                                </tr>
+                                """
+                                boxes_only_html = f"""
+                                <table style="width:100%; border-collapse:collapse; font-family:Arial, sans-serif;">
+                                  <tr>
+                                    <td style="width:50%; padding:10px 8px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                      <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[0].stat_highlight}</div>
+                                      <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[0].label}</div>
+                                    </td>
+                                    <td style="width:50%; padding:10px 8px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                      <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[1].stat_highlight}</div>
+                                      <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[1].label}</div>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="width:50%; padding:10px 8px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                      <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[2].stat_highlight}</div>
+                                      <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[2].label}</div>
+                                    </td>
+                                    <td style="width:50%; padding:10px 8px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                      <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{boxes[3].stat_highlight}</div>
+                                      <div style="font-size:11.5px; color:#475569; font-weight:500;">{boxes[3].label}</div>
+                                    </td>
+                                  </tr>
+                                </table>
+                                """
                             else:
-                                body_content = "<div style='display:flex; flex-direction:column; gap:10px; margin:14px 0;'>"
-                                for b_idx, b in enumerate(boxes):
-                                    offset = "margin-right:24px;" if b_idx % 2 == 0 else "margin-left:24px;"
-                                    body_content += f"""<div style='border:1.5px solid #CBD5E1; background:#FFFFFF; border-radius:6px; padding:10px 14px; text-align:center; {offset}'>
-<div style='font-size:18px; font-weight:800; color:#0F172A; margin-bottom:2px;'>{b.stat_highlight}</div>
-<div style='font-size:12px; color:#475569; font-weight:500;'>{b.label}</div>
-</div>"""
-                                body_content += "</div>"
+                                box_rows = ""
+                                for b in boxes:
+                                    box_rows += f"""
+                                    <tr>
+                                      <td colspan="2" style="padding:10px 8px; border:1.5px solid #CBD5E1; background-color:#FFFFFF; text-align:center;">
+                                        <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:2px;">{b.stat_highlight}</div>
+                                        <div style="font-size:11.5px; color:#475569; font-weight:500;">{b.label}</div>
+                                      </td>
+                                    </tr>
+                                    """
+                                content_rows_html = box_rows
+                                boxes_only_html = f"""<table style="width:100%; border-collapse:collapse; font-family:Arial, sans-serif;">{box_rows}</table>"""
                         else:
-                            bullets_html = ""
+                            bullets_inner = ""
                             for b_idx, b_text in enumerate(c_data["bullets"], start=1):
                                 prefix = f"{b_idx}. " if not b_text.strip().startswith(f"{b_idx}.") and not b_text.strip().startswith("•") else ""
-                                bullets_html += f"<div style='margin-bottom:10px;'><strong>{prefix}{b_text}</strong></div>"
-                            body_content = f"<div style='font-size:13.5px; color:#1E293B; line-height:1.6; padding:0 4px;'>{bullets_html}</div>"
+                                bullets_inner += f"<div style='margin-bottom:8px; font-size:13px; color:#1E293B; line-height:1.5;'><strong>{prefix}{b_text}</strong></div>"
+                            content_rows_html = f"""
+                            <tr>
+                              <td colspan="2" style="padding:14px 12px; background-color:#FFFFFF; border:1.5px solid #CBD5E1; text-align:left;">
+                                {bullets_inner}
+                              </td>
+                            </tr>
+                            """
 
-                        badge_num_html = f"<div style='font-size:26px; font-weight:800; color:#B8860B; margin-bottom:2px;'>{c_data['badge_number']}</div>" if c_data["badge_number"] else ""
+                        raw_card_table_html = f"""
+                        <table style="width:100%; max-width:360px; border:1.5px solid #CBD5E1; border-collapse:collapse; background-color:#FAFAFA; font-family:'Segoe UI', Arial, sans-serif; margin:0 auto 8px auto; box-shadow:0 2px 5px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden;">
+                          <tr style="background-color:{c_data['badge_bg']};">
+                            <td colspan="2" style="color:#FFFFFF; text-align:center; font-weight:bold; font-size:12px; padding:7px 0; letter-spacing:1px;">
+                              {c_data['badge']}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="padding:12px 14px 2px 14px; color:#64748B; font-weight:bold; font-size:12px; text-align:left;">
+                              Logo
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="text-align:center; padding:4px 14px 12px 14px;">
+                              {badge_num_html}
+                              <div style="color:#B8860B; font-weight:bold; font-size:17px; margin-bottom:4px; line-height:1.3;">{c_data['title']}</div>
+                              <div style="color:#0F172A; font-weight:600; font-size:13.5px; line-height:1.4;">{c_data['subtitle']}</div>
+                            </td>
+                          </tr>
+                          {content_rows_html}
+                          <tr>
+                            <td colspan="2" style="padding:14px; text-align:center;">
+                              <span style="display:inline-block; border:1.5px solid #CBD5E1; background-color:#FFFFFF; color:#0F172A; padding:6px 20px; border-radius:4px; font-size:13px; font-weight:bold;">
+                                {c_data['cta']}
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                        """
+                        st.markdown(raw_card_table_html, unsafe_allow_html=True)
 
-                        raw_card_html = f"""<div style="margin-bottom:15px; border-radius:8px; overflow:hidden; border:1px solid #E2E8F0; box-shadow:0 3px 6px rgba(0,0,0,0.06);">
-<div style="background:{c_data['badge_bg']}; color:#fff; text-align:center; padding:6px 0; font-weight:bold; font-size:12px; letter-spacing:1px;">{c_data['badge']}</div>
-<div style="background:#FAFAFA; padding:18px 16px; font-family:'Segoe UI', Roboto, sans-serif; min-height:440px; display:flex; flex-direction:column; justify-content:space-between;">
-<div>
-<div style="font-size:13px; color:#64748B; font-weight:600; margin-bottom:14px;">Logo</div>
-<div style="text-align:center; margin-bottom:18px;">
-{badge_num_html}
-<div style="color:#B8860B; font-weight:700; font-size:17px; line-height:1.3; margin-bottom:4px;">{c_data['title']}</div>
-<div style="color:#0F172A; font-weight:600; font-size:14px; line-height:1.4;">{c_data['subtitle']}</div>
-</div>
-{body_content}
-</div>
-<div style="text-align:center; margin-top:20px; padding-top:10px;">
-<span style="display:inline-block; border:1px solid #CBD5E1; background:#FFFFFF; color:#0F172A; padding:6px 18px; border-radius:4px; font-size:12.5px; font-weight:600;">{c_data['cta']}</span>
-</div>
-</div>
-</div>"""
-                        st.markdown(raw_card_html, unsafe_allow_html=True)
+                        uid = f"c_{idx}_{c_idx}"
+                        btn_boxes_snippet = ""
+                        if boxes_only_html:
+                            btn_boxes_snippet = f"""
+                            <button id="btn_b_{uid}" onclick="copyBoxes_{uid}()" style="width:100%; margin-top:5px; padding:6px 10px; background:#475569; color:#ffffff; border:none; border-radius:6px; font-weight:600; font-size:11.5px; cursor:pointer; font-family:'Segoe UI', sans-serif;">
+                              📋 Copy Riêng 4 Ô Số Liệu (dán vào khung có sẵn)
+                            </button>
+                            """
+
+                        copy_component_code = f"""
+                        <div style="margin:2px 0 10px 0; font-family:'Segoe UI', sans-serif;">
+                          <button id="btn_c_{uid}" onclick="copyCard_{uid}()" style="width:100%; padding:8px 10px; background:#2563EB; color:#ffffff; border:none; border-radius:6px; font-weight:600; font-size:12.5px; cursor:pointer; transition:0.2s;">
+                            📋 Copy Thẻ (Dán vào Google Slides)
+                          </button>
+                          {btn_boxes_snippet}
+                        </div>
+                        <script>
+                        const htmlCard_{uid} = {json.dumps(raw_card_table_html)};
+                        const htmlBoxes_{uid} = {json.dumps(boxes_only_html)};
+
+                        function execCopy(htmlContent, btnId, successText, origText, origColor) {{
+                            var tmp = document.createElement("div");
+                            tmp.innerHTML = htmlContent;
+                            tmp.style.position = "fixed";
+                            tmp.style.left = "-9999px";
+                            document.body.appendChild(tmp);
+                            
+                            var range = document.createRange();
+                            range.selectNode(tmp);
+                            var sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                            
+                            try {{
+                                var ok = document.execCommand("copy");
+                                var btn = document.getElementById(btnId);
+                                if (ok) {{
+                                    btn.innerText = successText;
+                                    btn.style.backgroundColor = "#16a34a";
+                                    setTimeout(function() {{
+                                        btn.innerText = origText;
+                                        btn.style.backgroundColor = origColor;
+                                    }}, 3000);
+                                }}
+                            }} catch(e) {{}}
+                            sel.removeAllRanges();
+                            document.body.removeChild(tmp);
+                        }}
+
+                        function copyCard_{uid}() {{
+                            execCopy(htmlCard_{uid}, "btn_c_{uid}", "✅ Đã Copy! Bấm Ctrl+V vào Google Slides", "📋 Copy Thẻ (Dán vào Google Slides)", "#2563EB");
+                        }}
+
+                        function copyBoxes_{uid}() {{
+                            execCopy(htmlBoxes_{uid}, "btn_b_{uid}", "✅ Đã Copy Ô Số Liệu! Bấm Ctrl+V", "📋 Copy Riêng 4 Ô Số Liệu (dán vào khung có sẵn)", "#475569");
+                        }}
+                        </script>
+                        """
+                        components.html(copy_component_code, height=76 if boxes_only_html else 44)
 
                 st.divider()
 
